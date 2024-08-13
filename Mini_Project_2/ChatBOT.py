@@ -39,7 +39,6 @@ with st.sidebar:
     st.markdown("<div style='background-color: #eeeeee; padding: 4px; margin-bottom: 32px; border-radius: 5px;'>",
                 unsafe_allow_html=True)
 
-    # Button for saving and downloading chats
     if st.button("Save Chat"):
         chat_history = "\n".join(
             [f"{message.role.capitalize()}: {message.parts[0].text}" for message in st.session_state.chat_session.history]
@@ -55,9 +54,7 @@ with st.sidebar:
             key="download"
         )
 
-    # Button for clearing chats
     if st.button("Clear Chat"):
-        # Clear chat history functionality
         st.session_state.chat_session.history = []
         st.experimental_rerun()
 
