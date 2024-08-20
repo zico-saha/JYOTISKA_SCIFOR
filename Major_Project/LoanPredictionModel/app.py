@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 import joblib
@@ -5,7 +6,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
 import plotly.express as px
 import plotly.graph_objects as go
-import os
 
 # Define the absolute path to the directory where your models and data files are located
 base_dir = '/mount/src/jyotiska_scifor/Major_Project/LoanPredictionModel'
@@ -47,6 +47,8 @@ numeric_features = ['ApplicantIncome',
 scaler = StandardScaler()
 
 # Function to preprocess user input data (categorical feature encoding and numeric scaling)
+
+
 def preprocess_input(data):
     # Convert categorical features to numeric values using mappings
     for feature, mapping in categorical_mappings.items():
@@ -56,6 +58,7 @@ def preprocess_input(data):
     # Scale numeric features using StandardScaler
     data[numeric_features] = scaler.fit_transform(data[numeric_features])
     return data
+
 
 # CSS for styling the navigation buttons
 st.markdown(
@@ -216,69 +219,98 @@ elif st.session_state.active_button == 'Training Data Visualization':
     # Define a custom color sequence
     color_sequence = ['#FF6347', '#4682B4']
 
-    # Plot categorical bar plots
-    st.subheader("Categorical Features")
-    for col in categorical_columns:
-        fig = px.bar(DF, x=col, title=f'{col} Distribution',
-                     color=DF[col].astype(str), color_discrete_sequence=color_sequence)
+    # Plot categorical features
+    for col in cat_cols:
+        fig = px.bar(DF, x=col, color='Loan_Status',
+                     color_discrete_sequence=color_sequence,
+                     title=f'Frequency of {col} by Loan Status')
         st.plotly_chart(fig)
 
-    # Plot numerical histograms
-    st.subheader("Numerical Features")
-    for col in numerical_columns:
-        fig = px.histogram(DF, x=col, title=f'{col} Histogram')
+    st.markdown("<hr>", unsafe_allow_html=True)
+
+    # Plot numerical features
+    for col in num_cols:
+        # Box Plot
+        fig = px.box(DF, y=col, color='Loan_Status',
+                     color_discrete_sequence=color_sequence,
+                     title=f'Box Plot of {col} by Loan Status')
         st.plotly_chart(fig)
 
-    # Plot numerical box plots
-    st.subheader("Numerical Box Plots")
-    for col in numerical_columns:
-        fig = px.box(DF, y=col, title=f'{col} Box Plot')
+        # Histogram
+        fig = px.histogram(DF, x=col, color='Loan_Status',
+                           color_discrete_sequence=color_sequence,
+                           title=f'Histogram of {col} by Loan Status')
         st.plotly_chart(fig)
 
-    # Plot numerical swarm plots
-    st.subheader("Numerical Swarm Plots")
-    for col in numerical_columns:
-        fig = px.strip(DF, y=col, title=f'{col} Swarm Plot')
+        # Swarm Plot
+        fig = px.strip(DF, y=col, color='Loan_Status',
+                       color_discrete_sequence=color_sequence,
+                       title=f'Swarm Plot of {col} by Loan Status')
         st.plotly_chart(fig)
+
+    # Compute correlation matrix
+    correlation_matrix = DF[num_cols].corr()
+
+    # Plot correlation heatmap with annotations
+    fig = go.Figure(data=go.Heatmap(
+        z=correlation_matrix.values,
+        x=correlation_matrix.columns,
+        y=correlation_matrix.columns,
+        colorscale='Viridis',
+        zmid=0,
+        colorbar=dict(title='Correlation'),
+        text=correlation_matrix.values,
+        texttemplate="%{text:.2f}",
+        textfont={"size": 12},
+        showscale=True
+    ))
+
+    fig.update_layout(title='Correlation Heatmap of Numeric Features')
+
+    # Display the heatmap
+    st.plotly_chart(fig)
+
+    # Add more spacing at the end of the section
+    st.markdown("<br>"*2, unsafe_allow_html=True)
 
 # Model Training Results Section
 elif st.session_state.active_button == 'Model Training Results':
     st.title("Model Training Results")
 
-    # Define the accuracy scores for different models
-    accuracy_scores = {
-        'Logistic Regression': 0.85,
-        'Linear SVC': 0.69,
-        'Gaussian Naive Bayes': 0.85,
-        'Decision Tree': 0.71,
-        'Random Forest': 0.81,
-        'AdaBoost': 0.80,
-        'Gradient Boost': 0.82,
-        'K-Neighbors': 0.64
+    # Add spacing and a subtle divider for better visual separation
+    st.markdown("<br>"*2, unsafe_allow_html=True)
+    st.markdown("---")
+
+    # Dictionary containing file paths to model training results
+    result_files = {
+        'AdaBoostClassifier': os.path.join(base_dir, 'AdaBoostClassifier_train_test_result.txt'),
+        'DecisionTreeClassifier': os.path.join(base_dir, 'DecisionTreeClassifier_train_test_result.txt'),
+        'GaussianNB': os.path.join(base_dir, 'GaussianNB_train_test_result.txt'),
+        'GradientBoostingClassifier': os.path.join(base_dir, 'GradientBoostingClassifier_train_test_result.txt'),
+        'KNeighborsClassifier': os.path.join(base_dir, 'KNeighborsClassifier_train_test_result.txt'),
+        'LinearSVC': os.path.join(base_dir, 'LinearSVC_train_test_result.txt'),
+        'LogisticRegression': os.path.join(base_dir, 'LogisticRegression_train_test_result.txt'),
+        'RandomForestClassifier': os.path.join(base_dir, 'RandomForestClassifier_train_test_result.txt')
     }
 
-    # Create a bar chart to display the accuracy scores
-    fig = go.Figure(data=[go.Bar(
-        x=list(accuracy_scores.keys()),
-        y=list(accuracy_scores.values()),
-        marker_color='#1f77b4'
-    )])
-    fig.update_layout(title='Model Accuracy Comparison',
-                      xaxis_title='Model',
-                      yaxis_title='Accuracy',
-                      xaxis_tickangle=-45)
+    # Dropdown to allow the user to select which model's training results to view
+    result_choice = st.selectbox(
+        'Select Model for Training Results', list(result_files.keys()))
 
+    # Display the training results of the selected model
+    with open(result_files[result_choice]) as file:
+        st.text(file.read())
+
+    st.markdown("<hr>", unsafe_allow_html=True)
+
+    # Read the data from the file
+    data = pd.read_csv(os.path.join(base_dir, 'accuracy_comparison.csv'))
+
+    # Create the bar chart
+    fig = px.bar(data, x='Model', y=['Training Accuracy', 'Testing Accuracy'],
+                 title='Comparison of Training and Testing Accuracies',
+                 labels={'value': 'Accuracy', 'Model': 'Model'},
+                 barmode='group')
+
+    # Display the chart in the Streamlit app
     st.plotly_chart(fig)
-
-    st.markdown("**Hyperparameters Used:**")
-    st.markdown(
-        """
-        - **Logistic Regression:** {'C': 0.1, 'max_iter': 100, 'solver': 'lbfgs'}
-        - **Linear SVC:** {'C': 0.1}
-        - **Decision Tree Classifier:** {'criterion': 'entropy', 'max_depth': 10, 'min_samples_split': 2}
-        - **Random Forest Classifier:** {'max_depth': None, 'min_samples_split': 5, 'n_estimators': 200}
-        - **AdaBoost Classifier:** {'learning_rate': 0.01, 'n_estimators': 50}
-        - **Gradient Boosting Classifier:** {'learning_rate': 0.01, 'max_depth': 3, 'n_estimators': 100}
-        - **K-Neighbors Classifier:** {'metric': 'manhattan', 'n_neighbors': 7, 'weights': 'uniform'}
-        """
-    )
