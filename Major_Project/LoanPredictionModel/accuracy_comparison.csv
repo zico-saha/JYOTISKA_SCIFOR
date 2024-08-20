@@ -1,0 +1,9 @@
+Model,Training Accuracy,Testing Accuracy
+LogisticRegression,0.798,0.854
+LinearSVC,0.798,0.854
+GaussianNB,0.796,0.846
+DecisionTreeClassifier,0.945,0.732
+RandomForestClassifier,0.949,0.837
+AdaBoostClassifier,0.798,0.854
+GradientBoostingClassifier,0.804,0.854
+KNeighborsClassifier,0.790,0.732
