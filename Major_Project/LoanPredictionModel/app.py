@@ -88,7 +88,7 @@ st.markdown(
 
 # Initialize the selected button in session state if not already initialized
 if 'active_button' not in st.session_state:
-    st.session_state.active_button = 'Loan Status Prediction'
+    st.session_state.active_button = 'Loan Prediction'
 
 # Display the navigation buttons for different app sections
 col1, col2, col3 = st.columns(3)
